@@ -1,16 +1,15 @@
-# main.py - Elden Ring Text RPG Bot
+# main.py - Elden Ring Text RPG Bot (Enhanced UI Version)
 import os, json, random
 from datetime import date
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# ==================== CONFIG ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     print("❌ BOT_TOKEN not set!")
     exit()
 
-# ==================== DATA ====================
+# ==================== GAME DATA ====================
 C = {
     "vagabond":{"n":"ولگرد","d":"شوالیه تبعیدی با زره سنگین","s":{"STR":12,"DEX":10,"INT":5,"VIT":15,"PER":8,"LCK":5,"CHR":6,"END":14,"AGI":7,"WIS":4},"sk":["ضربه طوفان","گام خونین","چنگال شیر"]},
     "samurai":{"n":"سامورایی","d":"جنگجوی چابک با کاتانا","s":{"STR":8,"DEX":15,"INT":4,"VIT":10,"PER":12,"LCK":8,"CHR":5,"END":10,"AGI":12,"WIS":6},"sk":["برش ماه گذرا","رقص تیغ","هجوم باد"]},
@@ -34,7 +33,7 @@ E = {
 }
 
 N = {
-    "merchant_kale":{"n":"کیل تاجر","loc":"کلیسای الی","area":"limgrave","shop":True,"items":{"مشعل":100,"تلسکوپ":300,"زره زنجیری":1000},
+    "merchant_kale":{"n":"کیل تاجر","loc":"کلیسای الی","area":"limgrave","shop":True,"items":{"مشعل":100,"تلسکوپ":300,"زره زنجیری":1000,"تیر ×10":150},
         "d":{"place":["این کلیسای الی... آخرین پناهگاه امن قبل از استورویل. گادریک اینجا رو هنوز نسوزونده.","تارنیش‌ها اینجا جمع می‌شن. بعضی‌هاشون دیوونه شدن.","اگه می‌خوای به استورویل بری، از دروازه اصلی نرو. گاستوک رو پیدا کن..."],
               "enemies":["اون سربازای گادریک رو می‌بینی؟ قبلاً آدم بودن. حالا فقط پوسته‌ان.","یه چیزی تو تپه‌های طوفان هست... یه سوارکار طلایی. نگهبان درخت. نزدیکش نشو."],
               "greet":"تارنیش... هه. دیگری آمده که به دنبال اردتری بگردد. من اینجام تا کمک کنم... البته با قیمت مناسب."}},
@@ -130,7 +129,9 @@ def np(uid,un,cn,cc):
 def md(p):
     a=L.get(p["area"],{}); l=a.get("sub",{}).get(p["loc"],{})
     return f"""⚜️ سرزمین‌های خاکستر
-📍 {l.get('n','?')} | 👑 {p['name']}
+━━━━━━━━━━━━━━━━━
+📍 {l.get('n','?')} | 🗺️ {a.get('n','?')}
+👑 ماری: {p['name']} | ⚡ Lv.{p['lv']}
 ━━━━━━━━━━━━━━━━━
 ❤️ HP: {bar(p['hp'],p['mhp'])} {p['hp']}/{p['mhp']}
 💧 MP: {bar(p['mp'],p['mmp'])} {p['mp']}/{p['mmp']}
@@ -138,32 +139,42 @@ def md(p):
 📊 XP: {bar(p['xp'],p['xpn'])} {p['xp']}/{p['xpn']}
 ━━━━━━━━━━━━━━━━━
 💰 سکه: {p['rn']:,} | 💎 الماس: {p['dm']}
-🎒 {len(p['inv'])}/{p['imx']} | ⚔️ کشتار: {p['kills']}"""
+🎒 کوله: {len(p['inv'])}/{p['imx']} | ⚔️ کشتار: {p['kills']}
+🧠 امتیاز مهارت: {p['sp']}"""
 
 def cd_disp(p):
     s=p["st"]
-    return f"""👤 {p['name']} Lv.{p['lv']} | {p['cn']}
+    return f"""👤 مشخصات {p['name']}
+━━━━━━━━━━━━━━━━━
+🎭 کلاس: {p['cn']} | ⚡ Lv.{p['lv']}
+⚖️ کارما: {p['karma']}
 ━━━━━━━━━━━━━━━━━
 ❤️ HP: {bar(p['hp'],p['mhp'])} {p['hp']}/{p['mhp']}
 💧 MP: {bar(p['mp'],p['mmp'])} {p['mp']}/{p['mmp']}
 ⚡ EN: {int(p['en']/p['men']*100) if p['men']>0 else 0}%
 
-📊 ویژگی‌ها:
-▪ قدرت: {s['STR']}  ▪ چابکی: {s['DEX']}  ▪ هوش: {s['INT']}
-▪ استقامت: {s['VIT']}  ▪ ادراک: {s['PER']}  ▪ شانس: {s['LCK']}
-▪ جذبه: {s['CHR']}  ▪ پایداری: {s['END']}
-▪ سرعت: {s['AGI']}  ▪ فرزانگی: {s['WIS']}
+📊 ویژگی‌های پایه:
+▪ قدرت (STR): {s['STR']}     ▪ چابکی (DEX): {s['DEX']}
+▪ هوش (INT): {s['INT']}      ▪ استقامت (VIT): {s['VIT']}
+▪ ادراک (PER): {s['PER']}     ▪ شانس (LCK): {s['LCK']}
+▪ جذبه (CHR): {s['CHR']}     ▪ پایداری (END): {s['END']}
+▪ سرعت (AGI): {s['AGI']}     ▪ فرزانگی (WIS): {s['WIS']}
 ━━━━━━━━━━━━━━━━━
-💰 {p['rn']:,} | 💎 {p['dm']} | 🧠 {p['sp']} امتیاز"""
+💰 سکه: {p['rn']:,} | 💎 الماس: {p['dm']}
+🧠 امتیاز مهارت: {p['sp']}"""
 
 def wd_disp(p):
     a=L.get(p["area"],{}); l=a.get("sub",{}).get(p["loc"],{})
     npcs="".join([f"\n  • {N[n]['n']}" for n in l.get("npcs",[]) if n in N])
-    return f"""📍 {l.get('n','?')}
+    return f"""🗺️ جهان الدن رینگ
+━━━━━━━━━━━━━━━━━
+📍 {l.get('n','?')}
 🗺️ منطقه: {a.get('n','?')}
 🧭 مختصات: {l.get('co','?')}
 ━━━━━━━━━━━━━━━━━
-🔊 شخصیت‌ها:{npcs if npcs else ' (کسی اینجا نیست)'}"""
+🔊 ساکنین:{npcs if npcs else ' (کسی اینجا نیست)'}
+━━━━━━━━━━━━━━━━━
+⬆️⬇️⬅️➡️ برای حرکت"""
 
 def sp_enemy(area,tier=None):
     if area not in LE: return None
@@ -184,24 +195,40 @@ def cs_create(p,en):
 
 def cs_disp(cs,p):
     en=cs["en"]
-    return f"""⚔️ میدان نبرد
+    return f"""⚔️ نبرد حماسی
 ━━━━━━━━━━━━━━━━━
-🛡️ {p['name']} Lv.{p['lv']}
+🛡️ {p['name']} (Lv.{p['lv']})
 ❤️ {bar(cs['php'],p['mhp'])} {cs['php']}/{p['mhp']}
-💧 {bar(cs['pmp'],p['mmp'])} {cs['pmp']}/{p['mmp']}
+💧 MP: {cs['pmp']}/{p['mmp']} | ⚡ EN: {cs['pen']}
 
-😈 {en['te']} {en['n']}
+😈 {en['te']} {en['n']} (Lv.{en['lv']})
 ❤️ {bar(en['chp'],en['hp'])} {en['chp']}/{en['hp']}
+💧 MP: {en['cmp']}/{en['mp']}
 ━━━━━━━━━━━━━━━━━
-📜 {chr(10).join(['» '+l for l in cs['log'][-5:]]) if cs['log'] else '» نبرد آغاز می‌شود...'}
-⏳ نوبت: {'شما 🟢' if cs['turn']=='player' else f'{en["n"]} 🔴'}"""
+📜 وقایع نبرد:
+{chr(10).join(['» '+l for l in cs['log'][-5:]]) if cs['log'] else '» نبرد آغاز می‌شود...'}
+━━━━━━━━━━━━━━━━━
+⏳ نوبت: {'🟢 شما' if cs['turn']=='player' else f'🔴 {en["n"]}'}
+💎 اقدام خود را انتخاب کن:"""
 
-def patk(cs):
-    en=cs["en"]; dmg=max(1,cs["patk"]+cs["pdf"]+random.randint(1,10)-en["df"])
+def patk(cs,heavy=False):
+    en=cs["en"]
+    en_cost=15 if heavy else 8
+    if cs["pen"]<en_cost: return "⚡ انرژی کافی نیست!"
+    cs["pen"]-=en_cost
+    dmg=max(1,cs["patk"]+random.randint(5,15)-en["df"])
+    if heavy: dmg=int(dmg*1.8)
     crit=random.random()<0.1
     if crit: dmg*=2
     en["chp"]=max(0,en["chp"]-dmg)
-    msg=f"⚡ ضربه کاری! {dmg} آسیب!" if crit else f"⚔️ {dmg} آسیب به {en['n']}!"
+    atype="🗡️ سنگین" if heavy else "⚔️ سبک"
+    msg=f"⚡ ضربه کاری! {dmg} آسیب!" if crit else f"{atype}: {dmg} آسیب به {en['n']}!"
+    cs["log"].append(msg); return msg
+
+def defend(cs):
+    cs["pdf"]=int(cs["pdf"]*1.5)
+    cs["pen"]=min(cs["pen"]+10,p["men"])
+    msg="🛡️ حالت دفاعی! آسیب کمتر، انرژی بیشتر!"
     cs["log"].append(msg); return msg
 
 def psk(cs,sk):
@@ -221,7 +248,7 @@ def eatk(cs):
     else:
         dmg=max(1,en["d"]-cs["pdf"]); cs["php"]=max(0,cs["php"]-dmg)
         msg=f"😈 {en['n']} حمله کرد! {dmg} آسیب!"
-    cs["log"].append(msg); return msg
+    cs["log"].append(msg); cs["pdf"]=p["st"]["VIT"]; return msg
 
 def chk_end(cs):
     if cs["en"]["chp"]<=0: return "win"
@@ -237,50 +264,62 @@ def victory(cs,p):
     while p["xp"]>=p["xpn"]:
         p["lv"]+=1; p["xp"]-=p["xpn"]; p["xpn"]=int(p["xpn"]*1.5); p["sp"]+=3
         p["mhp"]+=10; p["hp"]=p["mhp"]; p["mmp"]+=5; p["mp"]=p["mmp"]
-    p["combat"]=False; p["cs"]=None
-    return f"✨🎊 پیروزی!\n⭐ {en['n']} شکست خورد!\n🎁 +{xp} XP | +{rn} سکه"+(f"\n📦 آیتم: {', '.join(drops)}" if drops else "")
+    p["combat"]=False; p["cs"]=None; p["en"]=p["men"]
+    return f"✨🎊 پیروزی شکوهمند!\n⭐ {en['n']} را شکست دادی!\n🎁 +{xp} XP | +{rn} سکه"+(f"\n📦 غنائم: {', '.join(drops)}" if drops else "")
 
 def defeat(p):
-    p["rn"]=int(p["rn"]*0.9); p["combat"]=False; p["cs"]=None; p["hp"]=p["mhp"]
-    return "💀 شکست... ۱۰٪ سکه‌ها از دست رفت. دوباره برخیز!"
+    p["rn"]=int(p["rn"]*0.9); p["combat"]=False; p["cs"]=None; p["hp"]=p["mhp"]; p["en"]=p["men"]
+    return "💀 شکست خوردی...\n📉 ۱۰٪ سکه‌ها از دست رفت.\n🔥 برخیز و دوباره تلاش کن!"
 
-# ==================== KEYBOARDS ====================
+# ==================== KEYBOARDS (ENHANCED) ====================
 def kmain(): return InlineKeyboardMarkup([
-    [InlineKeyboardButton("⚔️ ماجراجویی",callback_data="adv")],
-    [InlineKeyboardButton("🗺️ جهان",callback_data="wrld"),InlineKeyboardButton("👤 شخصیت",callback_data="char")],
-    [InlineKeyboardButton("⚙️ سیستم",callback_data="sys"),InlineKeyboardButton("🏛️ تعامل",callback_data="intr")]])
+    [InlineKeyboardButton("⚔️ ماجراجویی (نبرد)",callback_data="adv")],
+    [InlineKeyboardButton("🗺️ جهان (ناوبری)",callback_data="wrld"),InlineKeyboardButton("👤 شخصیت (آمار)",callback_data="char")],
+    [InlineKeyboardButton("🎒 کوله‌پشتی (آیتم‌ها)",callback_data="eq"),InlineKeyboardButton("🏛️ تعامل با مکان",callback_data="intr")],
+    [InlineKeyboardButton("⚙️ سیستم (تنظیمات)",callback_data="sys"),InlineKeyboardButton("🏕️ استراحت",callback_data="rest")]])
+
 def kchar(): return InlineKeyboardMarkup([
-    [InlineKeyboardButton("⚔️ تجهیزات",callback_data="eq"),InlineKeyboardButton("⚡ مهارت‌ها",callback_data="skm")],
-    [InlineKeyboardButton("🔙 بازگشت",callback_data="back")]])
+    [InlineKeyboardButton("📊 آمار کامل",callback_data="stats"),InlineKeyboardButton("⚡ مهارت‌ها",callback_data="skm")],
+    [InlineKeyboardButton("🎒 کوله‌پشتی",callback_data="eq"),InlineKeyboardButton("🔄 توزیع مجدد",callback_data="respec")],
+    [InlineKeyboardButton("🔙 بازگشت به منوی اصلی",callback_data="back")]])
+
 def ktier(): return InlineKeyboardMarkup([
-    [InlineKeyboardButton("🟢 آسان",callback_data="t_easy")],
-    [InlineKeyboardButton("🟡 متوسط",callback_data="t_medium")],
-    [InlineKeyboardButton("🔴 سخت",callback_data="t_hard")],
-    [InlineKeyboardButton("⚫ نخبه",callback_data="t_elite")],
+    [InlineKeyboardButton("🟢 آسان - دشمنان ضعیف",callback_data="t_easy")],
+    [InlineKeyboardButton("🟡 متوسط - پاداش خوب",callback_data="t_medium")],
+    [InlineKeyboardButton("🔴 سخت - غنائم باارزش",callback_data="t_hard")],
+    [InlineKeyboardButton("⚫ نخبه - باس‌فایت",callback_data="t_elite")],
+    [InlineKeyboardButton("🎲 تصادفی",callback_data="t_random")],
     [InlineKeyboardButton("🔙 بازگشت",callback_data="back")]])
-def kcombat(): return InlineKeyboardMarkup([
-    [InlineKeyboardButton("⚔️ حمله فیزیکی",callback_data="c_atk"),InlineKeyboardButton("🧠 مهارت",callback_data="c_sk")],
-    [InlineKeyboardButton("🏃 فرار",callback_data="c_flee")]])
+
+def kcombat(p): return InlineKeyboardMarkup([
+    [InlineKeyboardButton("⚔️ حمله سبک (EN:8)",callback_data="c_atk"),InlineKeyboardButton("🗡️ حمله سنگین (EN:15)",callback_data="c_hatk")],
+    [InlineKeyboardButton("🛡️ دفاع (+EN, کم‌آسیب)",callback_data="c_def"),InlineKeyboardButton("🧠 مهارت‌ها (MP:15)",callback_data="c_sk")],
+    [InlineKeyboardButton("🧪 استفاده از آیتم",callback_data="c_item"),InlineKeyboardButton("🏃 فرار (AGI)",callback_data="c_flee")]])
+
 def ksys(): return InlineKeyboardMarkup([
-    [InlineKeyboardButton("🎁 جایزه روزانه",callback_data="daily")],
-    [InlineKeyboardButton("📊 پاداش لول",callback_data="lvlrwd")],
+    [InlineKeyboardButton("🎁 جایزه روزانه",callback_data="daily"),InlineKeyboardButton("📊 پاداش‌های لول",callback_data="lvlrwd")],
+    [InlineKeyboardButton("💡 راهنمای بازی",callback_data="guide"),InlineKeyboardButton("⚙️ تنظیمات",callback_data="settings")],
     [InlineKeyboardButton("🔙 بازگشت",callback_data="back")]])
+
 def kworld(p):
     a=L.get(p["area"],{}); l=a.get("sub",{}).get(p["loc"],{}); cn=l.get("cn",{})
     btns=[]; nr=[]
-    for d,k in [("north","⬆️"),("south","⬇️"),("east","➡️"),("west","⬅️")]:
+    for d,k in [("north","⬆️ شمال"),("south","⬇️ جنوب"),("east","➡️ شرق"),("west","⬅️ غرب")]:
         if d in cn: nr.append(InlineKeyboardButton(k,callback_data=f"mv_{cn[d]}"))
     if nr: btns.append(nr)
-    btns.append([InlineKeyboardButton("🖐️ تعامل",callback_data=f"int_{p['loc']}"),InlineKeyboardButton("⚔️ ماجراجویی",callback_data="adv_here")])
-    btns.append([InlineKeyboardButton("👤 شخصیت",callback_data="char"),InlineKeyboardButton("⚙️ سیستم",callback_data="sys")])
-    btns.append([InlineKeyboardButton("🔙 منوی اصلی",callback_data="back")])
+    btns.append([InlineKeyboardButton("🖐️ تعامل با این مکان",callback_data=f"int_{p['loc']}")])
+    btns.append([InlineKeyboardButton("⚔️ ماجراجویی در اینجا",callback_data="adv_here"),InlineKeyboardButton("🏕️ استراحت",callback_data="rest")])
+    btns.append([InlineKeyboardButton("🔥 آتش‌گاه (سفر سریع)",callback_data="fast_travel"),InlineKeyboardButton("🗺️ نقشه منطقه",callback_data="area_map")])
+    btns.append([InlineKeyboardButton("👤 شخصیت",callback_data="char"),InlineKeyboardButton("🔙 منوی اصلی",callback_data="back")])
     return InlineKeyboardMarkup(btns)
+
 def knpc(nid):
     npc=N[nid]; btns=[
-        [InlineKeyboardButton("📖 درباره مکان",callback_data=f"np_{nid}")],
+        [InlineKeyboardButton("📖 درباره این مکان",callback_data=f"np_{nid}")],
         [InlineKeyboardButton("⚔️ درباره دشمنان",callback_data=f"ne_{nid}")]]
-    if npc.get("shop"): btns.append([InlineKeyboardButton("🛒 خرید",callback_data=f"nsh_{nid}")])
-    btns.append([InlineKeyboardButton("🔙 خداحافظی",callback_data="bkw")])
+    if npc.get("shop"): btns.append([InlineKeyboardButton("🛒 خرید و فروش",callback_data=f"nsh_{nid}")])
+    btns.append([InlineKeyboardButton("🎁 درخواست کمک",callback_data=f"nhelp_{nid}"),InlineKeyboardButton("📜 شروع کوئست",callback_data=f"nquest_{nid}")])
+    btns.append([InlineKeyboardButton("👋 خداحافظی",callback_data="bkw")])
     return InlineKeyboardMarkup(btns)
 
 # ==================== HANDLERS ====================
@@ -290,25 +329,26 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         p=lp(uid); p["combat"]=False; p["cs"]=None; sp(p)
         await update.message.reply_text(f"🌟 خوش برگشتی {p['name']}!\n\n{md(p)}",reply_markup=kmain())
     else:
-        k=[[InlineKeyboardButton(f"{cd['n']} - {cd['d'][:30]}",callback_data=f"sc_{cid}")] for cid,cd in C.items()]
-        await update.message.reply_text("🌟 به سرزمین‌های خاکستر خوش آمدی!\nکلاس خود را انتخاب کن:",reply_markup=InlineKeyboardMarkup(k))
+        k=[[InlineKeyboardButton(f"{cd['n']} - {cd['d'][:35]}",callback_data=f"sc_{cid}")] for cid,cd in C.items()]
+        await update.message.reply_text("🌟 به سرزمین‌های خاکستر خوش آمدی تارنیش!\n\n🎭 کلاس خود را با دقت انتخاب کن:",reply_markup=InlineKeyboardMarkup(k))
 
 async def btn(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q=update.callback_query; await q.answer(); uid=update.effective_user.id
     p=lp(uid)
-    if not p: await q.edit_message_text("❌ /start را بزن"); return
+    if not p: await q.edit_message_text("❌ لطفاً /start را بزن"); return
     d=q.data
 
     if d.startswith("sc_"):
         cc=d[3:]; ctx.user_data["cc"]=cc
-        await q.edit_message_text(f"🗡️ کلاس {C[cc]['n']}\nنام شخصیتت را وارد کن:")
+        await q.edit_message_text(f"🗡️ کلاس {C[cc]['n']} انتخاب شد.\n\n📝 نام شخصیت خود را وارد کن:")
     elif d=="adv":
-        await q.edit_message_text("⚔️ سطح دشواری:",reply_markup=ktier())
+        await q.edit_message_text("⚔️ ماجراجویی\n\nسطح دشواری نبرد را انتخاب کن:",reply_markup=ktier())
     elif d.startswith("t_"):
-        en=sp_enemy(p["area"],d[2:])
-        if not en: await q.edit_message_text("❌ دشمنی پیدا نشد!",reply_markup=kmain()); return
+        tier=d[2:] if d!="t_random" else None
+        en=sp_enemy(p["area"],tier)
+        if not en: await q.edit_message_text("❌ دشمنی در این منطقه پیدا نشد!",reply_markup=kmain()); return
         cs=cs_create(p,en); p["combat"]=True; p["cs"]=cs; ctx.user_data["cs"]=cs; sp(p)
-        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat())
+        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
     elif d=="adv_here":
         await q.edit_message_text("⚔️ سطح دشواری:",reply_markup=ktier())
     elif d=="wrld":
@@ -319,93 +359,154 @@ async def btn(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         sp(p); await q.edit_message_text(wd_disp(p),reply_markup=kworld(p))
     elif d=="char":
         await q.edit_message_text(cd_disp(p),reply_markup=kchar())
+    elif d=="stats":
+        await q.edit_message_text(cd_disp(p),reply_markup=kchar())
     elif d=="eq":
         inv=p["inv"]
-        if not inv: await q.edit_message_text("🎒 خالی!",reply_markup=kchar()); return
-        txt="🎒 کوله‌پشتی\n\n"
-        for it in inv[:8]:
-            eqd=" (تجهیز شده)" if it in p["eq"].values() else ""
-            txt+=f"• {it}{eqd}\n"
-        await q.edit_message_text(txt,reply_markup=kchar())
+        txt="🎒 کوله‌پشتی\n━━━━━━━━━━━━━━━━━\n"
+        if not inv: txt+="(خالی)"
+        else:
+            for i,it in enumerate(inv[:10],1):
+                eqd=" ⚡تجهیز شده" if it in p["eq"].values() else ""
+                txt+=f"{i}. {it}{eqd}\n"
+        txt+=f"\n━━━━━━━━━━━━━━━━━\n📦 {len(inv)}/{p['imx']} آیتم"
+        btns=[]
+        for i,it in enumerate(inv[:5]):
+            btns.append([InlineKeyboardButton(f"{'⚡' if it in p['eq'].values() else '•'} {it[:30]}",callback_data=f"use_{it}")])
+        btns.append([InlineKeyboardButton("🔙 بازگشت",callback_data="char")])
+        await q.edit_message_text(txt,reply_markup=InlineKeyboardMarkup(btns))
+    elif d.startswith("use_"):
+        it=d[4:]
+        if it in p["inv"]:
+            if it in p["eq"].values():
+                for s,eid in p["eq"].items():
+                    if eid==it: p["eq"][s]=None; break
+                await q.edit_message_text(f"🔓 {it} از تجهیز خارج شد.",reply_markup=kchar())
+            else:
+                p["eq"]["right_hand"]=it
+                await q.edit_message_text(f"⚡ {it} تجهیز شد!",reply_markup=kchar())
+            sp(p)
     elif d=="skm":
-        txt="🧠 مهارت‌ها\n\n"
-        for sk in p.get("sk",[]): txt+=f"🔹 {sk} Lv.{p['sl'].get(sk,1)}\n"
-        txt+=f"\n🧠 امتیاز: {p['sp']}"
+        txt="🧠 مهارت‌های تو\n━━━━━━━━━━━━━━━━━\n"
+        for sk in p.get("sk",[]): txt+=f"🔹 {sk} (Lv.{p['sl'].get(sk,1)})\n"
+        txt+=f"\n🧠 امتیاز مهارت: {p['sp']}"
         btns=[]
         if p['sp']>0:
-            for sk in p.get("sk",[]): btns.append([InlineKeyboardButton(f"⬆️ {sk}",callback_data=f"usk_{sk}")])
+            for sk in p.get("sk",[]): btns.append([InlineKeyboardButton(f"⬆️ ارتقاء {sk} (-1)",callback_data=f"usk_{sk}")])
         btns.append([InlineKeyboardButton("🔙 بازگشت",callback_data="char")])
         await q.edit_message_text(txt,reply_markup=InlineKeyboardMarkup(btns))
     elif d.startswith("usk_"):
         sk=d[4:]
         if p['sp']>0: p['sp']-=1; p['sl'][sk]=p['sl'].get(sk,1)+1; sp(p)
-        await q.edit_message_text(f"⬆️ {sk} ارتقاء یافت!",reply_markup=kchar())
+        await q.edit_message_text(f"⬆️ {sk} ارتقاء یافت!\nسطح جدید: {p['sl'][sk]}",reply_markup=kchar())
     elif d=="sys":
-        await q.edit_message_text("⚙️ سیستم",reply_markup=ksys())
+        await q.edit_message_text("⚙️ سیستم\n\nیک گزینه انتخاب کن:",reply_markup=ksys())
     elif d=="daily":
         tdy=str(date.today())
-        if p.get("daily")==tdy: await q.edit_message_text("🎁 قبلاً گرفتی!",reply_markup=ksys()); return
+        if p.get("daily")==tdy: await q.edit_message_text("🎁 جایزه امروز رو گرفتی!\n⏰ فردا دوباره بیا.",reply_markup=ksys()); return
         p["daily"]=tdy; p["rn"]+=500; p["dm"]+=2; sp(p)
-        await q.edit_message_text("🎁 +۵۰۰ سکه | +۲ الماس",reply_markup=ksys())
+        await q.edit_message_text("🎁 جایزه روزانه\n\n💰 +۵۰۰ سکه\n💎 +۲ الماس\n\nفردا هم یادت نره!",reply_markup=ksys())
     elif d=="lvlrwd":
-        await q.edit_message_text("📊 سطح ۱: 🎁 معجون\nسطح ۵: 💰 ۱۰۰۰\nسطح ۱۰: 💎 ۵\n...",reply_markup=ksys())
+        txt="📊 پاداش‌های لول آپ\n━━━━━━━━━━━━━━━━━\n\n"
+        for lv,rwd in {1:"🎁 معجون سلامت ×5",5:"💰 ۱,۰۰۰ سکه",10:"💎 ۵ الماس",15:"🎁 معجون ×10",20:"🔧 کیت تعمیر",25:"💎 ۱۵ الماس",30:"⚗️ معجون بزرگ",50:"💎 ۵۰ الماس",100:"🎁 اشک لارو"}.items():
+            txt+=f"{'✅' if lv<=p['lv'] else '🔒'} Lv.{lv}: {rwd}\n"
+        await q.edit_message_text(txt,reply_markup=ksys())
+    elif d=="rest":
+        if p["en"]==p["men"] and p["hp"]==p["mhp"]:
+            await q.edit_message_text("😴 نیازی به استراحت نداری!",reply_markup=kmain())
+        else:
+            p["hp"]=p["mhp"]; p["mp"]=p["mmp"]; p["en"]=p["men"]; sp(p)
+            await q.edit_message_text("🏕️ استراحت کردی...\n❤️💧⚡ کاملاً بازیابی شد!\n\nاحساس بهتری داری.",reply_markup=kmain())
     elif d=="intr":
         a=L[p["area"]]; l=a["sub"].get(p["loc"],{})
         btns=[]
         for nid in l.get("npcs",[]):
-            if nid in N: btns.append([InlineKeyboardButton(f"💬 {N[nid]['n']}",callback_data=f"tk_{nid}")])
+            if nid in N: btns.append([InlineKeyboardButton(f"💬 گفتگو با {N[nid]['n']}",callback_data=f"tk_{nid}")])
         btns.append([InlineKeyboardButton("⛏️ کاوش منابع",callback_data="gath")])
         btns.append([InlineKeyboardButton("🔍 جستجوی تجهیزات",callback_data="srch")])
+        btns.append([InlineKeyboardButton("🤫 دزدی در سایه",callback_data="steal")])
         btns.append([InlineKeyboardButton("🔙 بازگشت",callback_data="bkw")])
-        await q.edit_message_text(f"🏛️ {l['n']}",reply_markup=InlineKeyboardMarkup(btns))
+        await q.edit_message_text(f"🏛️ {l['n']}\n\nانتخاب کن:",reply_markup=InlineKeyboardMarkup(btns))
     elif d.startswith("tk_"):
         nid=d[3:]; npc=N.get(nid)
         if not npc: await q.edit_message_text("❌",reply_markup=kmain()); return
-        await q.edit_message_text(f"💬 {npc['n']}\n━━━━━━\n*{npc['d']['greet']}*",reply_markup=knpc(nid),parse_mode="Markdown")
+        await q.edit_message_text(f"💬 {npc['n']}\n━━━━━━━━━━━━━━━━━\n*«{npc['d']['greet']}»*\n━━━━━━━━━━━━━━━━━\nچه می‌پرسی؟",reply_markup=knpc(nid),parse_mode="Markdown")
     elif d.startswith("np_"):
         nid=d[3:]; npc=N[nid]
-        await q.edit_message_text(f"💬 {npc['n']}:\n_{random.choice(npc['d']['place'])}_",reply_markup=knpc(nid),parse_mode="Markdown")
+        await q.edit_message_text(f"📖 {npc['n']}:\n\n_{random.choice(npc['d']['place'])}_",reply_markup=knpc(nid),parse_mode="Markdown")
     elif d.startswith("ne_"):
         nid=d[3:]; npc=N[nid]
-        await q.edit_message_text(f"💬 {npc['n']}:\n_{random.choice(npc['d']['enemies'])}_",reply_markup=knpc(nid),parse_mode="Markdown")
+        await q.edit_message_text(f"⚔️ {npc['n']}:\n\n_{random.choice(npc['d']['enemies'])}_",reply_markup=knpc(nid),parse_mode="Markdown")
     elif d.startswith("nsh_"):
         nid=d[4:]; npc=N[nid]
         if not npc.get("shop"): await q.edit_message_text("❌",reply_markup=kmain()); return
-        txt=f"🛒 {npc['n']}\n\n"
-        for item,price in npc.get("items",{}).items(): txt+=f"• {item}: {price} سکه\n"
+        txt=f"🛒 {npc['n']}\n━━━━━━━━━━━━━━━━━\n\n"
+        for item,price in npc.get("items",{}).items(): txt+=f"• {item}: {price:,} سکه\n"
+        txt+=f"\n💰 موجودی تو: {p['rn']:,} سکه"
         await q.edit_message_text(txt,reply_markup=knpc(nid))
+    elif d.startswith("nhelp_"):
+        nid=d[6:]; npc=N[nid]
+        await q.edit_message_text(f"🎁 {npc['n']}:\n\n_کمکی برای تو ندارم تارنیش... شاید بعداً._",reply_markup=knpc(nid),parse_mode="Markdown")
+    elif d.startswith("nquest_"):
+        nid=d[7:]; npc=N[nid]
+        await q.edit_message_text(f"📜 {npc['n']}:\n\n_کوئستی برای تو ندارم... هنوز._",reply_markup=knpc(nid),parse_mode="Markdown")
     elif d=="gath":
-        if p["en"]<20: await q.edit_message_text("⚡ انرژی کم!",reply_markup=kmain()); return
+        if p["en"]<20: await q.edit_message_text("⚡ انرژی کافی نداری! استراحت کن.",reply_markup=kmain()); return
         p["en"]-=20
         if random.random()<0.5+min(p["st"]["LCK"]*0.02,0.3):
-            rid=random.choice(["سنگ آهنگری","گیاه دارویی","تکه رون"])
+            rid=random.choice(["سنگ آهنگری [1]","گیاه دارویی","تکه رون","کریستال اشک"])
             if len(p["inv"])<p["imx"]: p["inv"].append(rid)
-            sp(p); await q.edit_message_text(f"⛏️ {rid} پیدا شد!",reply_markup=kmain())
-        else: sp(p); await q.edit_message_text("⛏️ چیزی پیدا نشد...",reply_markup=kmain())
+            sp(p); await q.edit_message_text(f"⛏️ {rid} پیدا کردی!",reply_markup=kmain())
+        else: sp(p); await q.edit_message_text("⛏️ چیزی پیدا نکردی...\n⚡ انرژی باقی‌مانده: "+str(p["en"]),reply_markup=kmain())
     elif d=="srch":
-        if p["en"]<30: await q.edit_message_text("⚡ انرژی کم!",reply_markup=kmain()); return
+        if p["en"]<30: await q.edit_message_text("⚡ انرژی کافی نداری!",reply_markup=kmain()); return
         p["en"]-=30
         if random.random()<0.3+min(p["st"]["LCK"]*0.02,0.2):
-            rid=random.choice(["شمشیر سرباز","زره چرمی","طلسم کوچک"])
+            rid=random.choice(["شمشیر سرباز","زره چرمی","طلسم کوچک","حلقه طلایی"])
             if len(p["inv"])<p["imx"]: p["inv"].append(rid)
-            sp(p); await q.edit_message_text(f"🔍 {rid} پیدا شد!",reply_markup=kmain())
-        else: sp(p); await q.edit_message_text("🔍 چیزی پیدا نشد...",reply_markup=kmain())
+            sp(p); await q.edit_message_text(f"🔍 {rid} پیدا کردی!",reply_markup=kmain())
+        else: sp(p); await q.edit_message_text("🔍 چیزی پیدا نکردی...",reply_markup=kmain())
+    elif d=="steal":
+        if p["en"]<25: await q.edit_message_text("⚡ انرژی کم!",reply_markup=kmain()); return
+        p["en"]-=25
+        if random.random()<0.2+min(p["st"]["AGI"]*0.02,0.3):
+            rid=random.choice(["سکه دزدیده شده","جواهر مخفی","نقشه قدیمی"])
+            if len(p["inv"])<p["imx"]: p["inv"].append(rid); p["karma"]-=1
+            sp(p); await q.edit_message_text(f"🤫 {rid} دزدیدی!\n⚖️ کارما: {p['karma']}",reply_markup=kmain())
+        else: sp(p); await q.edit_message_text("🤫 گیر افتادی! فرار کن!",reply_markup=kmain())
     elif d=="c_atk":
         cs=ctx.user_data.get("cs")
         if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
-        patk(cs); res=chk_end(cs)
+        patk(cs,False); res=chk_end(cs)
         if res=="win": msg=victory(cs,p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
         elif res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
         eatk(cs); res=chk_end(cs)
         if res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
         ctx.user_data["cs"]=cs; p["cs"]=cs; sp(p)
-        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat())
+        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
+    elif d=="c_hatk":
+        cs=ctx.user_data.get("cs")
+        if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
+        patk(cs,True); res=chk_end(cs)
+        if res=="win": msg=victory(cs,p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
+        elif res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
+        eatk(cs); res=chk_end(cs)
+        if res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
+        ctx.user_data["cs"]=cs; p["cs"]=cs; sp(p)
+        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
+    elif d=="c_def":
+        cs=ctx.user_data.get("cs")
+        if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
+        defend(cs); eatk(cs); res=chk_end(cs)
+        if res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
+        ctx.user_data["cs"]=cs; p["cs"]=cs; sp(p)
+        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
     elif d=="c_sk":
         cs=ctx.user_data.get("cs")
         if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
         btns=[[InlineKeyboardButton(f"🧠 {sk} (MP:15)",callback_data=f"cusk_{sk}")] for sk in p.get("sk",[])]
-        btns.append([InlineKeyboardButton("🔙",callback_data="c_back")])
-        await q.edit_message_text("🧠 مهارت:",reply_markup=InlineKeyboardMarkup(btns))
+        btns.append([InlineKeyboardButton("🔙 بازگشت به نبرد",callback_data="c_back")])
+        await q.edit_message_text("🧠 مهارت خود را انتخاب کن:",reply_markup=InlineKeyboardMarkup(btns))
     elif d.startswith("cusk_"):
         sk=d[5:]; cs=ctx.user_data.get("cs")
         if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
@@ -415,19 +516,19 @@ async def btn(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         eatk(cs); res=chk_end(cs)
         if res=="lose": msg=defeat(p); sp(p); await q.edit_message_text(msg,reply_markup=kmain()); return
         ctx.user_data["cs"]=cs; p["cs"]=cs; sp(p)
-        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat())
+        await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
     elif d=="c_back":
         cs=ctx.user_data.get("cs")
-        if cs: await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat())
+        if cs: await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat(p))
     elif d=="c_flee":
         cs=ctx.user_data.get("cs")
         if not cs: await q.edit_message_text("❌",reply_markup=kmain()); return
         if random.random()<0.3+min(p["st"]["AGI"]*0.02,0.3):
             p["combat"]=False; p["cs"]=None; sp(p)
-            await q.edit_message_text("🏃 فرار کردی!",reply_markup=kmain())
+            await q.edit_message_text("🏃 با موفقیت فرار کردی!",reply_markup=kmain())
         else:
             eatk(cs); ctx.user_data["cs"]=cs; p["cs"]=cs; sp(p)
-            await q.edit_message_text(cs_disp(cs,p),reply_markup=kcombat())
+            await q.edit_message_text("❌ فرار ناموفق!\n\n"+cs_disp(cs,p),reply_markup=kcombat(p))
     elif d=="back":
         await q.edit_message_text(md(p),reply_markup=kmain())
     elif d=="bkw":
@@ -439,11 +540,11 @@ async def name_inp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid=update.effective_user.id; un=update.effective_user.username or update.effective_user.first_name
     cc=ctx.user_data.get("cc","vagabond"); cn=update.message.text
     p=np(uid,un,cn,cc); sp(p)
-    await update.message.reply_text(f"✨ {cn} ساخته شد!\n\n{md(p)}",reply_markup=kmain())
+    await update.message.reply_text(f"✨ شخصیت {cn} ساخته شد!\n🎭 کلاس: {p['cn']}\n\n{md(p)}",reply_markup=kmain())
 
 async def stuck_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid=update.effective_user.id
-    if pe(uid): p=lp(uid); p["combat"]=False; p["cs"]=None; sp(p); await update.message.reply_text("✅ بازیابی!\n\n"+md(p),reply_markup=kmain())
+    if pe(uid): p=lp(uid); p["combat"]=False; p["cs"]=None; sp(p); await update.message.reply_text("✅ بازیابی موفق!\n\n"+md(p),reply_markup=kmain())
 
 def main():
     app=Application.builder().token(BOT_TOKEN).build()
@@ -451,7 +552,7 @@ def main():
     app.add_handler(CommandHandler("stuck",stuck_cmd))
     app.add_handler(CallbackQueryHandler(btn))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,name_inp))
-    print("🌟 Elden Ring RPG Bot running...")
+    print("🌟 Elden Ring RPG Bot (Enhanced) running...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__=="__main__":
